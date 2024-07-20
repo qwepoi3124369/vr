@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>360 Photo with WebXR</title>
+    <style>
+        body { margin: 0; }
+        canvas { display: block; }
+
+
+    #upload { position: absolute; top: 10px; left: 10px; }
+    #contral{
+        position: absolute;
+    bottom: 0;
+    width: 100%;
+    height: 100px;
+/* background-color: aqua; */
+display: flex;
+align-items: center;
+justify-content: center;
+}
+#contral button{
+    width: 160px;
+    height: 80px;
+    margin: 0 20px 0 20px;
+    border-radius: 99%;
+    font-size: 35px;
+    font-weight: 600;
+}   
+
+
+@media (max-width: 600px) {
+            #contral {
+                width: 60px;
+                /* flex-direction: column;
+                height: 100%; */
+                height: 70px;
+                width: 100%;
+                bottom: 5px;
+            }
+
+            #contral button {
+                width: 55px;
+                height: 55px;
+                font-size: 14px;
+                margin: 5px 2px;
+            }
+        }
+
+
+    #myImg{
+        position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 400px;
+    height: 100%;
+background-color: rgba(0,0,0, 0.5);
+display: flex;
+flex-direction: column;
+align-items: center;
+
+
+}
+.imgChangeButton{
+    width: 350px;
+    height: auto;
+    margin: 2.5px 20px 30px 20px;
+    background-color: rgba(0,0,0, 0.1);
+    border: none;
+
+ 
+ 
+}  
+
+#myImg img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            margin: 0;
+            filter: blur(0.5px);
+         
+      
+        }
+        .myImgTitle{
+            color: rgb(255, 255, 255);
+            font-size: 35px;
+            margin-top: 150px;
+        }
+        .myImgTitle2{
+            color: rgb(255, 255, 255);
+            font-size: 25px;
+            margin-top: 15px;
+            width: 80%;
+            text-align: center;
+
+        }
+
+
+
+        #myImgclose{
+position: absolute;
+top: 5px;
+left: 5px;
+width: 50px;
+height: 40px;
+border-radius: 99%;
+font-size: 20px;
+font-weight: 600;
+
+        }
+        #myImgclose:hover{background-color: rgb(236, 238, 110);}
+
+
+
+
+        #myImgOpen{
+            display: none;
+position: absolute;
+top: 5px;
+right: 5px;
+width: 50px;
+height: 40px;
+border-radius: 99%;
+font-size: 20px;
+font-weight: 600;
+
+        }
+        #myImgOpen:hover{background-color: rgb(236, 238, 110);}
+
+
+        @media (max-width: 600px) {
+            #myImgOpen{
+                display: inline;
+
+            }
+            #myImg{
+            
+width: 100%;
+height: 100%;
+
+            }
+
+
+            .imgChangeButton{
+    width: 250px;
+    height: auto;
+    margin: 2.5px 20px 30px 20px;
+ 
+}  
+
+        }
+
+
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: none;
+            background-color: bisque;
+            font-size: 35px;
+        }
+
+
+
+
+    </style>
+</head>
+<body>
+
+    <div id="loading">
+        <!-- <img src="https://example.com/path/to/loading.gif" alt="Loading..."> -->
+         讀取中
+    </div>
+    <button id="myImgOpen">&lt;&lt;&lt;</button>    
+<div  id="myImg">
+
+    <button id="myImgclose">>>></button>    
+
+<div class="myImgTitle">介紹</div>
+<div class="myImgTitle2">這是涼亭</div>
+          
+</div>
+
+
+
+  <div id="contral">
+
+  
+        <button id="up">上</button>
+        <button id="down">下</button>
+        <button id="left">左</button>
+        <button id="right">右</button>
+        <button id="zoomIn">放大</button>
+        <button id="zoomOut">縮小</button>
+
+
+    
+
+
+    </div>
+    <script src="https://code.jquery.com/jquery-3.7.1.slim.min.js" integrity="sha256-kmHvs0B+OpCW5GVHUNjv9rOmY0IvSIRcf7zGUDTDQM8=" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/webxr-polyfill@latest/build/webxr-polyfill.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128/examples/js/controls/OrbitControls.js"></script>
+    <script type="module">
+        import { VRButton } from 'https://cdn.jsdelivr.net/npm/three@0.128/examples/jsm/webxr/VRButton.js';
+
+        // 初始化場景、相機和渲染器
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+
+
+        
+
+
+  
+
+
+
+  // 定義變量以便在需要時更新紋理
+  let sphere;
+        const textureLoader = new THREE.TextureLoader();
+
+
+let loadtime=0
+let textureName=1
+
+
+        function loadTexture(url,contralNum) {
+if(loadtime==1){
+    alert("操作太快囉")
+    return "error"
+}else{
+    textureName=contralNum
+    $(".imgChangeButton img").css("border", "none");
+    $(".imgChange"+contralNum+" img").css("border", "5px solid red");
+}
+
+
+
+            loadtime=1
+            if($(window).width() < 600){
+        $("#myImg").hide()
+        $("#myImgOpen").show()
+    }
+
+            $("#loading").show(); // Show loading indicator
+         
+
+
+
+            textureLoader.load(url, (texture) => {   
+                if (sphere) {
+                    scene.remove(sphere);
+                }
+                texture.minFilter = THREE.LinearFilter; // Improve texture display at poles
+                const sphereGeometry = new THREE.SphereGeometry(500, 60, 40);
+                const sphereMaterial = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide });
+                sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+                sphere.scale.x = -1; // Invert the sphere to view from the inside
+                scene.add(sphere);
+                $("#loading").hide(); // Show loading indicator
+         
+            });
+            
+            setTimeout(() => {
+                loadtime=0
+                }, 3000);
+    return "ok"
+        }
+
+   
+        const textureURL1 = '霧台.jpg';
+        loadTexture(textureURL1,1)
+        $(".imgChange1 img").css("border", "5px solid red");
+
+
+
+
+
+        // 設置相機位置
+        camera.position.set(0, 0, 0.1);
+
+        // 初始化 OrbitControls 控制器
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableZoom = false; // 啟用縮放功能
+        controls.enableRotate = true; // 确保启用旋转
+        controls.enablePan = false; // 禁用平移功能
+        controls.minDistance = -100; // 設置最小縮放距離
+        controls.maxDistance = 1000; // 設置最大縮放距離
+
+
+        renderer.domElement.addEventListener('wheel', function(event) {
+    event.preventDefault(); // 阻止默认滚轮行为
+
+    // 改变符号以让滚动方向相反
+    const delta = event.deltaY * 0.01; // 直接使用 event.deltaY
+
+    // 调整相机的 fov
+    camera.fov = THREE.MathUtils.clamp(camera.fov + delta, 10, 75);
+    camera.updateProjectionMatrix(); // 更新投影矩阵
+});
+
+
+
+
+  // 增加按鈕控制功能
+// 为左旋转按钮添加事件监听器
+
+    //  // 添加坐标轴辅助线
+    //  const axesHelper = new THREE.AxesHelper(100);
+    //     scene.add(axesHelper);
+
+    //     // 添加网格辅助线
+    //     const gridHelper = new THREE.GridHelper(500, 50);
+    //     scene.add(gridHelper);
+
+
+
+
+
+
+        
+        document.getElementById('left').onclick = function() {
+            var angle = Math.PI / 18;  // 旋转 10 度逆时针
+
+// 围绕全局Y轴旋转
+var quaternion = new THREE.Quaternion();
+quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), angle);
+camera.position.applyQuaternion(quaternion);
+
+camera.lookAt(new THREE.Vector3(0, 0, 0));
+renderer.render(scene, camera);
+};
+
+document.getElementById('right').onclick = function() {
+    var angle = -Math.PI / 18;  // 旋转 10 度顺时针
+
+// 围绕全局Y轴旋转
+var quaternion = new THREE.Quaternion();
+quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), angle);
+camera.position.applyQuaternion(quaternion);
+
+camera.lookAt(new THREE.Vector3(0, 0, 0));
+renderer.render(scene, camera);
+};
+
+document.getElementById('up').onclick = function() {
+    var angle = Math.PI / 18;  // 旋转 10 度逆时针
+    var maxPitch = Math.PI / 2 - 0.1; // 最大俯仰角度接近90度，但不会完全达到
+
+    // 获取相机当前的本地X轴
+    var localXAxis = new THREE.Vector3(1, 0, 0);
+    localXAxis.applyQuaternion(camera.quaternion);
+
+    // 计算当前相机朝向与Y轴的点积
+    var yAxis = new THREE.Vector3(0, 1, 0);
+    var direction = camera.getWorldDirection(new THREE.Vector3()).normalize();
+    var dotProduct = yAxis.dot(direction);
+
+    // 检查当前俯仰角度并限制最大角度
+    var pitch = Math.asin(dotProduct);
+    if (pitch < maxPitch) {
+        // 围绕本地X轴旋转
+        var quaternion = new THREE.Quaternion();
+        quaternion.setFromAxisAngle(localXAxis, angle);
+        camera.position.applyQuaternion(quaternion);
+
+        camera.lookAt(new THREE.Vector3(0, 0, 0));
+        renderer.render(scene, camera);
+    }
+
+       
+    
+};
+
+document.getElementById('down').onclick = function() {
+    var angle = -Math.PI / 18;  // 旋转 10 度顺时针
+    var minPitch = -Math.PI / 2 + 0.1; // 最小俯仰角度接近-90度，但不会完全达到
+
+    // 获取相机当前的本地X轴
+    var localXAxis = new THREE.Vector3(1, 0, 0);
+    localXAxis.applyQuaternion(camera.quaternion);
+
+    // 计算当前相机朝向与Y轴的点积
+    var yAxis = new THREE.Vector3(0, 1, 0);
+    var direction = camera.getWorldDirection(new THREE.Vector3()).normalize();
+    var dotProduct = yAxis.dot(direction);
+
+    // 检查当前俯仰角度并限制最小角度
+    var pitch = Math.asin(dotProduct);
+    if (pitch > minPitch) {
+        // 围绕本地X轴旋转
+        var quaternion = new THREE.Quaternion();
+        quaternion.setFromAxisAngle(localXAxis, angle);
+        camera.position.applyQuaternion(quaternion);
+
+        camera.lookAt(new THREE.Vector3(0, 0, 0));
+        renderer.render(scene, camera);
+    }
+
+    
+};
+
+
+
+
+const zoomFactor = 50; // 定义一个縮放系數
+
+document.getElementById('zoomIn').addEventListener('click', function() {
+    // 定义 delta 为当前 fov 除以 1.1 减去当前 fov，以减少 fov 值
+    const delta = camera.fov / 1.1 - camera.fov;
+
+    // 使用 clamp 来确保 fov 在 10 到 75 度之间
+    camera.fov = THREE.MathUtils.clamp(camera.fov + delta, 10, 75);
+    camera.updateProjectionMatrix(); // 更新投影矩阵
+
+});
+
+document.getElementById('zoomOut').addEventListener('click', function() {
+    // 为增加 fov 值定义一个正 delta
+    const delta = camera.fov * 1.1 - camera.fov;
+
+    // 使用 clamp 确保 fov 保持在 10 到 75 度之间
+    camera.fov = THREE.MathUtils.clamp(camera.fov + delta, 10, 75);
+    camera.updateProjectionMatrix(); // 更新投影矩阵
+});
+   
+
+
+
+
+
+
+
+
+
+const sphereGeometry2 = new THREE.SphereGeometry(400, 60, 40);
+                
+const sphereMaterial2 = new THREE.MeshBasicMaterial({
+    color: 0x00ff00,  // Green color, change as needed
+    wireframe: false  // Set to true if you want to see a wireframe style
+});
+
+// Create the sphere mesh with geometry and material
+let sphere2 = new THREE.Mesh(sphereGeometry2, sphereMaterial2);
+sphere2.scale.x = -1; // Invert the sphere to view from the inside
+scene.add(sphere2)
+sphere2.position.set(0, 0, 0);
+
+// Add a light to the scene if not already present
+const light = new THREE.PointLight(0xffffff, 1, 1000);
+light.position.set(0, 0, 0);
+scene.add(light);
+
+
+const tagGeometry = new THREE.ConeGeometry(10, 32, 32);
+    const tagMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 }); // Bright yellow color
+    const ring = new THREE.Mesh(tagGeometry, tagMaterial);
+sphere2.add(ring);
+
+const tagGeometrysphere = new THREE.SphereGeometry(10, 32, 32);
+const tagMaterialsphere = new THREE.MeshBasicMaterial({ color: 0xffff00 }); // Bright yellow color
+const ringsphere = new THREE.Mesh(tagGeometrysphere, tagMaterialsphere);
+ringsphere.position.set(0,-15,0)
+ring.add(ringsphere);
+
+
+
+
+    const ring2 = new THREE.Mesh(tagGeometry, tagMaterial);
+sphere2.add(ring2);
+const ringsphere2 = new THREE.Mesh(tagGeometrysphere, tagMaterialsphere);
+ringsphere2.position.set(0,-15,0)
+ring2.add(ringsphere2);
+
+
+// First, define the raycaster and a mouse vector
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+function onMouseClick(event) {
+    // Calculate mouse position in normalized device coordinates (-1 to +1) for both components
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+    // Update the ray with a new origin and direction
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObjects([ring,ringsphere]); // only check for intersections with the ring
+
+    if (intersects.length > 0) {
+    $(".myImgTitle2").html("旗尾山位於楠梓仙溪的東側，海拔達318公尺，屬於玉山山脈的尾稜，數百年前即以「旗尾秋蒐」之景色入列清代台邑八景，亦是當今台灣小百岳之一，因山頂地形成鋸齒狀，恰似清朝的三角絞龍旗，故稱為旗尾山，與楠梓仙溪另一端的鼓山，形成「旗鼓相當」之勢，是旗山區地名的由來。")
+    }
+
+
+    const intersects2 = raycaster.intersectObjects([ring2,ringsphere2]); // only check for intersections with the ring
+
+if (intersects2.length > 0) {
+$(".myImgTitle2").html("旗山由於位居交通幅輳及農產富饒之地，自清朝以來便官商雲集、繁華一時。漫步在歷史與人文氣息匯集的百年山城老街，巴洛克立面裝飾的紅磚建築與砂岩堆砌的石拱亭仔腳，無不散發優雅古典的氣息，更有多棟建築物被指定為古蹟或文化資產，值得一一尋訪品味")
+}
+}
+
+// Add event listener for the mouse click
+window.addEventListener('click', onMouseClick);
+
+
+
+// 將LLA轉換成ECEF座標
+const llaToEcef = (lat, lon, alt, rad) => {
+	let f = 0
+	let ls = Math.atan((1 - f) ** 2 * Math.tan(lat))
+	let x = rad * Math.cos(ls) * Math.cos(lon) + alt * Math.cos(lat) * Math.cos(lon)
+	let y = rad * Math.cos(ls) * Math.sin(lon) + alt * Math.cos(lat) * Math.sin(lon)
+	let z = rad * Math.sin(ls) + alt * Math.sin(lat)
+	return new THREE.Vector3(x, y, z)
+}
+
+
+
+// 用前面的函式所取得的座標
+const lonLauToRadian = (lon, lat, rad) => llaToEcef(Math.PI * (0 - lat) / 180, Math.PI * (lon / 180), 0, rad)
+	const cityEciPosition = lonLauToRadian(-1.7, -10, 350)
+	// 指定位置給圖釘
+	ring.position.set(cityEciPosition.x, -cityEciPosition.z, -cityEciPosition.y)	
+  ring.lookAt(camera.position);
+  ring.rotation.x = Math.PI;
+
+  const cityEciPosition2= lonLauToRadian(20, -2, 350)
+	// 指定位置給圖釘
+	ring2.position.set(cityEciPosition2.x, -cityEciPosition2.z, -cityEciPosition2.y)	
+  ring2.lookAt(camera.position);
+  ring2.rotation.x = Math.PI;
+
+
+
+
+
+
+
+
+
+
+
+
+
+        ////
+
+
+        // 設置相機位置
+        camera.position.set(0, 0, 0.1);
+   
+        // 動畫循環
+        function animate() {
+
+            renderer.setAnimationLoop(render);
+            requestAnimationFrame(animate);
+        }
+
+        function render() {
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        // 設置 WebXR 支援
+   renderer.xr.enabled = true;
+
+// 創建並添加 VRButton
+document.body.appendChild(VRButton.createButton(renderer));
+        // 調整畫面大小
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
